@@ -105,13 +105,46 @@ public final class JavaScriptServlet extends HttpServlet {
 	@Override
 	public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
 		CsrfGuard csrfGuard = CsrfGuard.getInstance();
-
-		if (csrfGuard != null && csrfGuard.isTokenPerPageEnabled()) {
-			writePageTokens(request, response);
+		String isFetchCsrfToken = request.getHeader("FETCH-CSRF-TOKEN");
+		
+		if (csrfGuard != null && isFetchCsrfToken != null){
+			fetchCsrfToken(request, response);
 		} else {
-			response.sendError(404);
+			if (csrfGuard != null && csrfGuard.isTokenPerPageEnabled()) {
+				writePageTokens(request, response);
+			} else {
+				response.sendError(404);
+			}
 		}
 	}
+
+	private void fetchCsrfToken(HttpServletRequest request, HttpServletResponse response) throws IOException {
+		HttpSession session = request.getSession(true);
+		@SuppressWarnings("unchecked")
+		CsrfGuard csrfGuard = CsrfGuard.getInstance();
+		String token_name = csrfGuard.getTokenName();
+		String token_value = (String) session.getAttribute(csrfGuard.getSessionKey());
+		String token_pair = token_name + ":" + token_value;
+
+		/** setup headers **/
+		response.setContentType("text/plain");
+
+		/** write dynamic javascript **/
+		OutputStream output = null;
+		PrintWriter writer = null;
+
+		try {
+			output = response.getOutputStream();
+			writer = new PrintWriter(output);
+
+			writer.write(token_pair);
+			writer.flush();
+		} finally {
+			Writers.close(writer);
+			Streams.close(output);
+		}
+	}
+
 
 	private void writePageTokens(HttpServletRequest request, HttpServletResponse response) throws IOException {
 		HttpSession session = request.getSession(true);

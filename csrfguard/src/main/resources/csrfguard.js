@@ -76,13 +76,6 @@
 	    };
 	}();
 	
-	/** Prevent cross-domain websites from freezing String.prototype **/
-	if(Object.isFrozen(String.prototype)){
-		alert('OWASP CSRFGuard was disabled due to a security reason.');
-		console.log('The page which loaded this script did a Object.freeze(String.prototype), which makes OWASP CSRFGuard incompatible');
-		return;
-	}
-
 	/** string utility functions **/
 	String.prototype.startsWith = function(prefix) {
 		return this.indexOf(prefix) === 0;
@@ -393,6 +386,8 @@
 	 * Only inject the tokens if the JavaScript was referenced from HTML that
 	 * was served by us. Otherwise, the code was referenced from malicious HTML
 	 * which may be trying to steal tokens using JavaScript hijacking techniques.
+	 * The token is now removed and fetched using another POST request to solve,
+	 * the token hijacking problem.
 	 */
 	if(isValidDomain(document.domain, "%DOMAIN_ORIGIN%")) {
 		/** optionally include Ajax support **/
@@ -402,11 +397,22 @@
 			} else {
 				hijackStandard();
 			}
-			
+		
+		var xhr = window.XMLHttpRequest ? new window.XMLHttpRequest : new window.ActiveXObject("Microsoft.XMLHTTP");
+		var csrfToken = {};
+		xhr.open("POST", "%SERVLET_PATH%", false);
+		xhr.setRequestHeader("FETCH-CSRF-TOKEN", "1");
+		xhr.send(null);
+		
+		var token_pair = xhr.responseText;
+		token_pair = token_pair.split(":");
+		var token_name = token_pair[0];
+		var token_value = token_pair[1];
+
 			XMLHttpRequest.prototype.onsend = function(data) {
 				if(isValidUrl(this.url)) {
-					this.setRequestHeader("X-Requested-With", "%X_REQUESTED_WITH%")
-					this.setRequestHeader("%TOKEN_NAME%", "%TOKEN_VALUE%");
+					this.setRequestHeader("X-Requested-With", "XMLHttpRequest")
+					this.setRequestHeader(token_name, token_value);
 				}
 			};
 		}
@@ -414,7 +420,7 @@
 		/** update nodes in DOM after load **/
 		addEvent(window,'unload',EventCache.flush);
 		addEvent(window,'load', function() {
-			injectTokens("%TOKEN_NAME%", "%TOKEN_VALUE%");
+			injectTokens(token_name, token_value);
 		});
 	} else {
 		alert("OWASP CSRFGuard JavaScript was included from within an unauthorized domain!");
