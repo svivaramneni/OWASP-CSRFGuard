@@ -45,3 +45,16 @@ OWASP CSRFGuard 3.1 is available on Maven Central.  Add the following dependency
 ## Email List
 
 You can sign up for the OWASP CSRFGuard email list [here.]( https://lists.owasp.org/mailman/listinfo/owasp-csrfguard)
+
+## Last News
+
+An important security fix has been applied to the CSRFGuard version 3.0.
+
+
+Do a token pre-fetch on every page.
+
+Instead of hard coding the CSRF token, we send a POST request to fetch the token and populate the JS variable.
+
+Thanks to Ahamed Nafeez <ahamednafeez@gmail.com> for this fix.
+
+
