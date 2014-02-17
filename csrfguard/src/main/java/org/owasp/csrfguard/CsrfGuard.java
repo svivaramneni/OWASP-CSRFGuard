@@ -38,7 +38,7 @@ import org.owasp.csrfguard.action.*;
 import org.owasp.csrfguard.log.*;
 import org.owasp.csrfguard.util.*;
 
-public final class CsrfGuard {
+public class CsrfGuard {
 
 	public final static String PAGE_TOKENS_KEY = "Owasp_CsrfGuard_Pages_Tokens_Key";
 
@@ -80,18 +80,22 @@ public final class CsrfGuard {
 
 	private List<IAction> actions = null;
 	
-	private static class SingletonHolder {
-	  public static final CsrfGuard instance = new CsrfGuard();
-	}
+	private static CsrfGuardInstanceProvider provider = new CsrfGuardSingletonInstance();
 
+	/** This setter provides a way to inject CsrfGuard instance in a multi-tenant environment,
+	 *  where each tenant has its own CSRFGurad Configuration.
+	 */
+	public static void setInstanceProvider(CsrfGuardInstanceProvider provider) {
+		CsrfGuard.provider = provider;
+	}
+	
 	public static CsrfGuard getInstance() {
-		return SingletonHolder.instance;
+		return provider.getInstance();
 	}
 
-	public static void load(Properties properties) throws NoSuchAlgorithmException, InstantiationException, IllegalAccessException, ClassNotFoundException, IOException, NoSuchProviderException {
-		CsrfGuard csrfGuard = SingletonHolder.instance;
-
-		/** load simple properties **/
+	/** CsrfGuard instance which needs to be initialized is passed as a parameter. */
+	public static void load(CsrfGuard csrfGuard, Properties properties) throws NoSuchAlgorithmException, InstantiationException, IllegalAccessException, ClassNotFoundException, IOException, NoSuchProviderException {
+	/** load simple properties **/
 		csrfGuard.setLogger((ILogger) Class.forName(properties.getProperty("org.owasp.csrfguard.Logger", "org.owasp.csrfguard.log.ConsoleLogger")).newInstance());
 		csrfGuard.setTokenName(properties.getProperty("org.owasp.csrfguard.TokenName", "OWASP_CSRFGUARD"));
 		csrfGuard.setTokenLength(Integer.parseInt(properties.getProperty("org.owasp.csrfguard.TokenLength", "32")));

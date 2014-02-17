@@ -35,7 +35,9 @@ public class CsrfGuardServletContextListener implements ServletContextListener {
 		try {
 			is = getResourceStream(config, context);
 			properties.load(is);
-			CsrfGuard.load(properties);
+			CsrfGuard csrfGuard = CsrfGuard.getInstance();
+			/*This passes CsrfGuard singleton instance for initialization*/
+			CsrfGuard.load(csrfGuard, properties);
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		} finally {
